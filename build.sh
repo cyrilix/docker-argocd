@@ -116,7 +116,7 @@ build_ksonnet_dependencies() {
     echo "./go" >> .dockerignore
     mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
-    KSONNET_VERSION=$(grep KSONNET_VERSION= /home/cyrille/src/docker/docker-argocd/argo-cd/Dockerfile | cut -f 2 -d=)
+    KSONNET_VERSION=$(grep KSONNET_VERSION= ${SRC_DIR}/argo-cd/Dockerfile | cut -f 2 -d=)
     set +e
     go get github.com/ksonnet/ksonnet
     set -e
@@ -136,8 +136,8 @@ build_kustomize_dependencies() {
     export GOPATH=${PWD}/go
     mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
-    KUSTOMIZE1_VERSION=$(grep KUSTOMIZE1_VERSION= /home/cyrille/src/docker/docker-argocd/argo-cd/Dockerfile | cut -f 2 -d=)
-    KUSTOMIZE_VERSION=$(grep KUSTOMIZE_VERSION= /home/cyrille/src/docker/docker-argocd/argo-cd/Dockerfile | cut -f 2 -d=)
+    KUSTOMIZE1_VERSION=$(grep KUSTOMIZE1_VERSION= ${SRC_DIR}/argo-cd/Dockerfile | cut -f 2 -d=)
+    KUSTOMIZE_VERSION=$(grep KUSTOMIZE_VERSION= ${SRC_DIR}/argo-cd/Dockerfile | cut -f 2 -d=)
     set +e
     go get ${github_pkg}
     set -e
@@ -172,7 +172,7 @@ build_aws_iam_authenticator() {
     export GOPATH=${PWD}/go
     mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
-    AWS_IAM_AUTHENTICATOR_VERSION=$(grep  AWS_IAM_AUTHENTICATOR_VERSION= /home/cyrille/src/docker/docker-argocd/argo-cd/Dockerfile | cut -f 2 -d=)
+    AWS_IAM_AUTHENTICATOR_VERSION=$(grep  AWS_IAM_AUTHENTICATOR_VERSION= ${SRC_DIR}/argo-cd/Dockerfile | cut -f 2 -d=)
     set +e
     go get ${github_pkg}
     set -e
