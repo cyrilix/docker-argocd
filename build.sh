@@ -199,9 +199,9 @@ build_kustomize_dependencies
 build_aws_iam_authenticator
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-build_and_push_images amd64 ./Dockerfile
+# build_and_push_images amd64 ./Dockerfile
 
-patch_dockerfile Dockerfile Dockerfile.arm armv7 arm arm
+patch_dockerfile Dockerfile Dockerfile.arm arm32v7 arm arm
 build_and_push_images arm ./Dockerfile.arm
 
 patch_dockerfile Dockerfile Dockerfile.arm64 arm64v8 aarch64 arm64
