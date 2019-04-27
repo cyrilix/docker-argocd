@@ -99,7 +99,7 @@ patch_dockerfile() {
     sed -i "s#.*RUN curl -L -o /usr/local/bin/aws-iam-authenticator .*#COPY aws-iam-authenticator.${k8s_arch} /usr/local/bin/aws-iam-authenticator\nRUN \\\\#" ${dockerfile_dest}
 
     # argobase
-    sed -i "s#\(FROM \)\(debian:.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-arm-static /usr/bin/\n#" ${dockerfile_dest}
+    sed -i "s#\(FROM \)\(debian:.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_dest}
     sed -i "s#FROM argocd-base#FROM argocd-base-${k8s_arch}#" ${dockerfile_dest}
 
     # Go build
@@ -199,12 +199,13 @@ build_kustomize_dependencies
 build_aws_iam_authenticator
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-# build_and_push_images amd64 ./Dockerfile
 
 patch_dockerfile Dockerfile Dockerfile.arm arm32v7 arm arm
 build_and_push_images arm ./Dockerfile.arm
 
 patch_dockerfile Dockerfile Dockerfile.arm64 arm64v8 aarch64 arm64
 build_and_push_images arm64 ./Dockerfile.arm64
+
+build_and_push_images amd64 ./Dockerfile
 
 build_manifests
