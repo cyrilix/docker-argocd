@@ -121,7 +121,7 @@ build_ksonnet_dependencies() {
     go get github.com/ksonnet/ksonnet
     set -e
     cd ${GOPATH}/src/github.com/ksonnet/ksonnet
-    git co v${KSONNET_VERSION}
+    git checkout v${KSONNET_VERSION}
     for arch in arm arm64; do
         echo "Build ${arch} binary"
         GOARCH=${arch} make install && mv ${GOPATH}/bin/ks ${SRC_DIR}/ks.${arch}
@@ -146,7 +146,7 @@ build_kustomize_dependencies() {
     wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -O dep && chmod 755 dep
 
     git reset --hard
-    git co v${KUSTOMIZE1_VERSION}
+    git checkout v${KUSTOMIZE1_VERSION}
     ./dep ensure
     echo "Fix go dependencies"
     for arch in arm arm64; do
@@ -155,7 +155,7 @@ build_kustomize_dependencies() {
     done
 
     git reset --hard
-    git co v${KUSTOMIZE_VERSION}
+    git checkout v${KUSTOMIZE_VERSION}
     echo "Fix go dependencies"
     ./dep ensure
     for arch in arm arm64; do
@@ -181,7 +181,7 @@ build_aws_iam_authenticator() {
     wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -O dep && chmod 755 dep
 
     git reset --hard
-    git co ${AWS_IAM_AUTHENTICATOR_VERSION}
+    git checkout ${AWS_IAM_AUTHENTICATOR_VERSION}
     ./dep ensure
     echo "Fix go dependencies"
     for arch in arm arm64; do
