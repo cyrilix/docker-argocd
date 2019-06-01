@@ -1,8 +1,8 @@
 #! /bin/bash
 
 IMG_NAME=cyrilix/argocd
-VERSION=0.12.2
-MAJOR_VERSION=0.12
+VERSION=1.0.1
+MAJOR_VERSION=1.0
 export DOCKER_CLI_EXPERIMENTAL=enabled
 export DOCKER_USERNAME=cyrilix
 
@@ -35,8 +35,6 @@ fetch_sources() {
     cd ${project_name}
     git reset --hard
     git checkout v${VERSION}
-
-    go get github.com/prometheus/node_exporter
 }
 
 build_and_push_images() {
