@@ -1,8 +1,8 @@
 #! /bin/bash
 
-IMG_NAME=cyrilix/argocd
-VERSION=1.2.0
-MAJOR_VERSION=1.2
+export IMG_NAME=cyrilix/argocd
+export VERSION=1.2.3
+export MAJOR_VERSION=1.2
 export DOCKER_CLI_EXPERIMENTAL=enabled
 export DOCKER_USERNAME=cyrilix
 
