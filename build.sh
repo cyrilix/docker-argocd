@@ -8,6 +8,8 @@ export DOCKER_USERNAME=cyrilix
 
 GOLANG_VERSION_MULTIARCH=1.11.9-stretch
 
+export GOPATH=${PWD}/go
+
 set -e
 
 init_qemu() {
@@ -27,12 +29,13 @@ init_qemu() {
 
 fetch_sources() {
     local project_name=argo-cd
+    mkdir -p ${GOPATH}/src
 
-    if [[ ! -d  ${project_name} ]] ;
+    if [[ ! -d  ${GOPATH}/src/${project_name} ]] ;
     then
-        git clone https://github.com/argoproj/${project_name}.git
+        git clone https://github.com/argoproj/${project_name}.git ${GOPATH}/src/${project_name}
     fi
-    cd ${project_name}
+    cd $GOPATH/src/${project_name}
     git reset --hard
     git checkout v${VERSION}
 }
@@ -90,7 +93,6 @@ patch_dockerfile() {
     sed -i "/.*ks_.*_linux_amd64.*/d" ${dockerfile_dest}
 
     # Kustomize
-    sed -i "s#.*RUN curl -L -o /usr/local/bin/kustomize1 .*#COPY kustomize1.${k8s_arch} /usr/local/bin/kustomize1\nRUN \\\\#" ${dockerfile_dest}
     sed -i "s#.*RUN curl -L -o /usr/local/bin/kustomize .*#COPY kustomize.${k8s_arch} /usr/local/bin/kustomize\nRUN \\\\#" ${dockerfile_dest}
 
     # aws-iam-authenticator
@@ -99,6 +101,9 @@ patch_dockerfile() {
     # argobase
     sed -i "s#\(FROM \)\(debian:.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_dest}
     sed -i "s#FROM argocd-base#FROM argocd-base-${k8s_arch}#" ${dockerfile_dest}
+
+    # argocd-ui
+    sed -i "s#\(FROM \)\(node:.*\)#\1${docker_arch}/\2\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_orig} > ${dockerfile_dest}
 
     # Go build
     sed -i "s#.*\(RUN make cli server.*\) \(&&.*\)#\1 GOARCH=${k8s_arch}\2#" ${dockerfile_dest}
@@ -110,9 +115,7 @@ build_ksonnet_dependencies() {
     echo "# Build Ksonnet dependencies #"
     echo "##############################"
 
-    export GOPATH=${PWD}/go
     echo "./go" >> .dockerignore
-    mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
     KSONNET_VERSION=$(grep KSONNET_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
@@ -131,34 +134,18 @@ build_kustomize_dependencies() {
     echo "# Build Kustomize dependencies #"
     echo "################################"
     local github_pkg="github.com/kubernetes-sigs/kustomize"
-    export GOPATH=${PWD}/go
-    mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
-    KUSTOMIZE1_VERSION=$(grep KUSTOMIZE1_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
     KUSTOMIZE_VERSION=$(grep KUSTOMIZE_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
     go get ${github_pkg}
     set -e
     cd ${GOPATH}/src/${github_pkg}
-    echo "Download dep tool"
-    wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -O dep && chmod 755 dep
-
-    git reset --hard
-    git checkout v${KUSTOMIZE1_VERSION}
-    ./dep ensure
-    echo "Fix go dependencies"
-    for arch in arm arm64; do
-        echo "Build ${arch} binary ${KUSTOMIZE1_VERSION}"
-        GOARCH=${arch} go build && mv kustomize ${SRC_DIR}/kustomize1.${arch}
-    done
 
     git reset --hard
     git checkout v${KUSTOMIZE_VERSION}
-    echo "Fix go dependencies"
-    ./dep ensure
     for arch in arm arm64; do
         echo "Build ${arch} binary ${KUSTOMIZE_VERSION}"
-        GOARCH=${arch} go build && mv kustomize ${SRC_DIR}/kustomize.${arch}
+        GOARCH=${arch} go build -o kustomize cmd/kustomize/main.go && mv kustomize ${SRC_DIR}/kustomize.${arch}
     done
     cd ${SRC_DIR}
 }
@@ -167,8 +154,6 @@ build_aws_iam_authenticator() {
     echo "# Build aws-iam-authenticator dependencies #"
     echo "############################################"
     local github_pkg="github.com/kubernetes-sigs/aws-iam-authenticator"
-    export GOPATH=${PWD}/go
-    mkdir -p ${GOPATH}
     SRC_DIR=${PWD}
     AWS_IAM_AUTHENTICATOR_VERSION=$(grep  AWS_IAM_AUTHENTICATOR_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
