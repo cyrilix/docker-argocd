@@ -1,4 +1,5 @@
 #! /bin/bash
+set -x
 
 export IMG_NAME=cyrilix/argocd
 export VERSION=1.2.3
@@ -9,6 +10,8 @@ export DOCKER_USERNAME=cyrilix
 GOLANG_VERSION_MULTIARCH=1.11.9-stretch
 
 export GOPATH=${PWD}/go
+export PROJECT_NAME=argo-cd
+export PROJECT_DIR=${GOPATH}/src/${PROJECT_NAME}
 
 set -e
 
@@ -17,6 +20,7 @@ init_qemu() {
     echo "# Init qemu #"
     echo "#############"
 
+    cd ${PROJECT_DIR}
     local qemu_url='https://github.com/multiarch/qemu-user-static/releases/download/v2.9.1-1'
 
     docker run --rm --privileged multiarch/qemu-user-static:register --reset
@@ -28,14 +32,13 @@ init_qemu() {
 }
 
 fetch_sources() {
-    local project_name=argo-cd
     mkdir -p ${GOPATH}/src
 
-    if [[ ! -d  ${GOPATH}/src/${project_name} ]] ;
+    if [[ ! -d  ${PROJECT_DIR} ]] ;
     then
-        git clone https://github.com/argoproj/${project_name}.git ${GOPATH}/src/${project_name}
+        git clone https://github.com/argoproj/${PROJECT_NAME}.git ${GOPATH}/src/${PROJECT_NAME}
     fi
-    cd $GOPATH/src/${project_name}
+    cd ${PROJECT_DIR}
     git reset --hard
     git checkout v${VERSION}
 }
@@ -102,9 +105,6 @@ patch_dockerfile() {
     sed -i "s#\(FROM \)\(debian:.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_dest}
     sed -i "s#FROM argocd-base#FROM argocd-base-${k8s_arch}#" ${dockerfile_dest}
 
-    # argocd-ui
-    sed -i "s#\(FROM \)\(node:.*\)#\1${docker_arch}/\2\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_orig} > ${dockerfile_dest}
-
     # Go build
     sed -i "s#.*\(RUN make cli server.*\) \(&&.*\)#\1 GOARCH=${k8s_arch}\2#" ${dockerfile_dest}
 
@@ -117,7 +117,7 @@ build_ksonnet_dependencies() {
 
     echo "./go" >> .dockerignore
     SRC_DIR=${PWD}
-    KSONNET_VERSION=$(grep KSONNET_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
+    KSONNET_VERSION=$(grep KSONNET_VERSION= ${PROJECT_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
     go get github.com/ksonnet/ksonnet
     set -e
@@ -125,7 +125,7 @@ build_ksonnet_dependencies() {
     git checkout v${KSONNET_VERSION}
     for arch in arm arm64; do
         echo "Build ${arch} binary"
-        GOARCH=${arch} make install && mv ${GOPATH}/bin/ks ${SRC_DIR}/ks.${arch}
+        GOARCH=${arch} make install && mv ${GOPATH}/bin/ks ${PROJECT_DIR}/ks.${arch}
     done
     cd ${SRC_DIR}
 }
@@ -135,7 +135,7 @@ build_kustomize_dependencies() {
     echo "################################"
     local github_pkg="github.com/kubernetes-sigs/kustomize"
     SRC_DIR=${PWD}
-    KUSTOMIZE_VERSION=$(grep KUSTOMIZE_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
+    KUSTOMIZE_VERSION=$(grep KUSTOMIZE_VERSION= ${PROJECT_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
     go get ${github_pkg}
     set -e
@@ -145,7 +145,7 @@ build_kustomize_dependencies() {
     git checkout v${KUSTOMIZE_VERSION}
     for arch in arm arm64; do
         echo "Build ${arch} binary ${KUSTOMIZE_VERSION}"
-        GOARCH=${arch} go build -o kustomize cmd/kustomize/main.go && mv kustomize ${SRC_DIR}/kustomize.${arch}
+        GOARCH=${arch} go build -o kustomize cmd/kustomize/main.go && mv kustomize ${PROJECT_DIR}/kustomize.${arch}
     done
     cd ${SRC_DIR}
 }
@@ -155,7 +155,7 @@ build_aws_iam_authenticator() {
     echo "############################################"
     local github_pkg="github.com/kubernetes-sigs/aws-iam-authenticator"
     SRC_DIR=${PWD}
-    AWS_IAM_AUTHENTICATOR_VERSION=$(grep  AWS_IAM_AUTHENTICATOR_VERSION= ${SRC_DIR}/Dockerfile | cut -f 2 -d=)
+    AWS_IAM_AUTHENTICATOR_VERSION=$(grep  AWS_IAM_AUTHENTICATOR_VERSION= ${PROJECT_DIR}/Dockerfile | cut -f 2 -d=)
     set +e
     go get ${github_pkg}
     set -e
@@ -181,8 +181,10 @@ build_ksonnet_dependencies
 build_kustomize_dependencies
 build_aws_iam_authenticator
 
-echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+#echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
+
+cd "${PROJECT_DIR}"
 patch_dockerfile Dockerfile Dockerfile.arm arm32v7 arm arm
 build_and_push_images arm ./Dockerfile.arm
 
