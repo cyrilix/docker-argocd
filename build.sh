@@ -1,13 +1,11 @@
 #! /bin/bash
-set -x
+set -e
 
 export IMG_NAME=cyrilix/argocd
 export VERSION=1.2.3
 export MAJOR_VERSION=1.2
 export DOCKER_CLI_EXPERIMENTAL=enabled
 export DOCKER_USERNAME=cyrilix
-
-GOLANG_VERSION_MULTIARCH=1.11.9-stretch
 
 export GOPATH=${PWD}/go
 export PROJECT_NAME=argo-cd
@@ -181,7 +179,7 @@ build_ksonnet_dependencies
 build_kustomize_dependencies
 build_aws_iam_authenticator
 
-#echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 
 cd "${PROJECT_DIR}"
