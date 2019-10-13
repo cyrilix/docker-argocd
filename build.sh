@@ -100,7 +100,7 @@ patch_dockerfile() {
     sed -i "s#.*RUN curl -L -o /usr/local/bin/aws-iam-authenticator .*#COPY aws-iam-authenticator.${k8s_arch} /usr/local/bin/aws-iam-authenticator\nRUN \\\\#" ${dockerfile_dest}
 
     # argobase
-    sed -i "s#\(FROM \)\(debian:.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_dest}
+    sed -i "s#\(FROM \)\(.* as argocd-base\)\(.*\)#\1${docker_arch}/\2-${k8s_arch}\3\n\nCOPY qemu-${qemu_arch}-static /usr/bin/\n#" ${dockerfile_dest}
     sed -i "s#FROM argocd-base#FROM argocd-base-${k8s_arch}#" ${dockerfile_dest}
 
     # Go build
